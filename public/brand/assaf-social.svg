@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#171816"/>
+  <path d="M0 510 460 50h180L180 510z" fill="#c6a66a" opacity=".09"/>
+  <path d="M1200 120 790 530h-150l410-410z" fill="#c6a66a" opacity=".08"/>
+  <rect x="510" y="116" width="180" height="180" fill="none" stroke="#c6a66a" stroke-width="3"/>
+  <text x="600" y="245" fill="#d5bd8e" font-family="serif" font-size="112" text-anchor="middle">ع</text>
+  <text x="600" y="380" fill="#fffdf8" font-family="sans-serif" font-size="56" text-anchor="middle">متجر عساف</text>
+  <text x="600" y="443" fill="#d5bd8e" font-family="sans-serif" font-size="24" letter-spacing="12" text-anchor="middle">ASSAF STORE</text>
+  <text x="600" y="530" fill="#fffdf8" font-family="sans-serif" font-size="21" opacity=".75" text-anchor="middle">ABAYAS · SAUDI ARABIA</text>
+</svg>

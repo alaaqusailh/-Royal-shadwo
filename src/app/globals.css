@@ -1,0 +1,252 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fffdf8;
+  --foreground: #20201e;
+  --brand-charcoal: #0d0d0d;
+  --brand-black: #1a1a1a;
+  --brand-sand: #f2e8d9;
+  --brand-ivory: #faf7f2;
+  --brand-gold: #c8a96c;
+  --font-arabic-display: var(--font-arabic), sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-montserrat);
+  --font-display: var(--font-cormorant);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-montserrat), Arial, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:lang(ar) {
+  font-family: var(--font-arabic-display);
+  letter-spacing: 0;
+}
+
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #c6a66a;
+  color: #171816;
+}
+
+.font-display {
+  font-family: var(--font-cormorant), Georgia, serif;
+}
+
+.font-arabic {
+  font-family: var(--font-arabic-display);
+}
+
+:lang(ar) .font-display {
+  font-family: var(--font-arabic-display);
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #9a7c49;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+:lang(ar) .eyebrow {
+  letter-spacing: 0;
+  font-size: 0.75rem;
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: fit-content;
+  border-bottom: 1px solid #c8a96c;
+  padding-bottom: 0.4rem;
+  color: #28231c;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  transition: color 160ms ease;
+}
+
+.section-link:hover {
+  color: #907347;
+}
+
+:lang(ar) .section-link {
+  letter-spacing: 0;
+}
+
+.filter-chip {
+  display: inline-flex;
+  min-height: 2.4rem;
+  align-items: center;
+  border: 1px solid #ded6ca;
+  background: white;
+  padding: 0.5rem 0.9rem;
+  color: #6d645a;
+  font-size: 0.65rem;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+}
+
+.filter-chip:hover {
+  border-color: #9a7c49;
+  color: #1a1a1a;
+}
+
+.filter-chip-active {
+  border-color: #0d0d0d;
+  background: #0d0d0d;
+  color: white;
+}
+
+@layer components {
+  .header-icon {
+    display: grid;
+    width: 2.55rem;
+    height: 2.55rem;
+    place-items: center;
+    border-radius: 9999px;
+    color: rgb(255 255 255 / 0.82);
+    transition: color 180ms ease, background-color 180ms ease;
+  }
+
+  .header-icon:hover {
+    background: rgb(255 255 255 / 0.08);
+    color: #d2b57c;
+  }
+}
+
+.icon-count {
+  position: absolute;
+  inset-block-start: -0.1rem;
+  inset-inline-end: -0.1rem;
+  display: grid;
+  min-width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: #c8a96c;
+  padding-inline: 0.2rem;
+  color: #0d0d0d;
+  font-size: 0.57rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.nav-link {
+  position: relative;
+  padding-block: 0.4rem;
+}
+
+.nav-link::after {
+  position: absolute;
+  inset-inline-start: 0;
+  inset-block-end: 0;
+  width: 0;
+  height: 1px;
+  background: #c8a96c;
+  content: "";
+  transition: width 200ms ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.brand-announcement {
+  animation: brand-announcement-scroll 28s linear infinite;
+}
+
+.brand-announcement:hover {
+  animation-play-state: paused;
+}
+
+@keyframes brand-announcement-scroll {
+  from {
+    transform: translateX(100vw);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.product-image-wrap {
+  isolation: isolate;
+}
+
+.product-quick-view {
+  position: absolute;
+  inset-inline: 0.75rem;
+  inset-block-end: 0.75rem;
+  display: block;
+  transform: translateY(0.4rem);
+  background: rgb(13 13 13 / 0.92);
+  padding: 0.8rem 1rem;
+  color: white;
+  text-align: center;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.group:hover .product-quick-view,
+.group:focus-within .product-quick-view {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.footer-link {
+  transition: color 160ms ease;
+}
+
+.footer-link:hover {
+  color: #d2b57c;
+}
+
+@media (max-width: 640px) {
+  .product-quick-view {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-announcement {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

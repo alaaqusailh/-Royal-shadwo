@@ -1,0 +1,47 @@
+{
+  "name": "fashion-store",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "prisma generate && next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/checkout-validation.test.ts tests/cart-validation.test.ts tests/admin-roles.test.ts tests/storefront-copy.test.ts tests/money-validation.test.ts tests/image-storage.test.ts tests/product-slug.test.ts tests/health.integration.test.ts tests/checkout.integration.test.ts",
+    "test:unit": "tsx --test tests/checkout-validation.test.ts tests/cart-validation.test.ts tests/admin-roles.test.ts tests/storefront-copy.test.ts tests/money-validation.test.ts tests/image-storage.test.ts tests/product-slug.test.ts",
+    "test:integration": "tsx --test tests/health.integration.test.ts tests/checkout.integration.test.ts",
+    "db:generate": "prisma generate",
+    "db:seed": "prisma generate && prisma db seed",
+    "admin:create": "prisma generate && tsx scripts/create-admin.ts"
+  },
+  "dependencies": {
+    "@next-auth/prisma-adapter": "^1.0.0",
+    "@prisma/adapter-mariadb": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
+    "next-auth": "^4.24.15",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv": "^18.0.8",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "16.4.2",
+    "prisma": "7.10.1",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.0",
+    "typescript": "^5"
+  }
+}
