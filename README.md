@@ -63,6 +63,12 @@ Open `http://localhost:3000/` or `http://localhost:3000/ar` for Arabic, `http://
 
 After completing the setup above, Windows users can start the development server by double-clicking `run-local.cmd` or running `.\run-local.cmd` from PowerShell. The script checks for Node.js, npm, `.env`, and installed dependencies; it does not create or overwrite environment files, apply migrations, or seed the database.
 
+## Safe GitHub publishing from VS Code
+
+Open **Terminal → Run Task…** (or run **Tasks: Run Task** from the Command Palette) and choose **رفع جميع الملفات إلى GitHub**. The task checks that `origin` is this repository, respects `.gitignore`, screens changed files and `.env.example`, and shows the branch, file list, exclusions, and add/modify/delete counts. It does not stage or push until you type `PUSH` at the confirmation prompt. It commits only the reviewed safe files and pushes explicitly to the current branch; it never force-pushes or switches to `main`.
+
+The task refuses to proceed during a merge/conflict, with pre-staged changes, or while sensitive files remain in the current commit. Sensitive files are excluded even if tracked; tracked sensitive-file deletions can be included. Secret-like content is reported by path and line number only, never printed. If secret material was committed in the past, removing it from a new commit cannot erase Git history: rotate/revoke those credentials separately. The task requires the configured Git Credential Manager/GitHub authentication and records counts/result in the ignored `.data/github-publish.log`.
+
 ## Features and boundaries
 
 - The `/admin` route tree has its own Royal Shadow layout and is protected on the server. Every admin page re-checks an active user and an allowed administrative role. Super Admins can create administrator accounts and manage staff roles/status under `/admin/users`; the last active Super Admin cannot be removed or deactivated.
