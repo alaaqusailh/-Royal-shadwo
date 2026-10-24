@@ -61,6 +61,8 @@ Use the verified installation directory on your machine; this does not change th
 
 Open `http://localhost:3000/` or `http://localhost:3000/ar` for Arabic, `http://localhost:3000/en` for English, and `http://localhost:3000/admin/login` for admin sign-in.
 
+After completing the setup above, Windows users can start the development server by double-clicking `run-local.cmd` or running `.\run-local.cmd` from PowerShell. The script checks for Node.js, npm, `.env`, and installed dependencies; it does not create or overwrite environment files, apply migrations, or seed the database.
+
 ## Features and boundaries
 
 - The `/admin` route tree has its own Royal Shadow layout and is protected on the server. Every admin page re-checks an active user and an allowed administrative role. Super Admins can create administrator accounts and manage staff roles/status under `/admin/users`; the last active Super Admin cannot be removed or deactivated.
