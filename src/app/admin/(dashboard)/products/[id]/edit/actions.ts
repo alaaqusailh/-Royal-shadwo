@@ -6,7 +6,8 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/db";
 import { isCompareAtPriceValid } from "@/lib/validation/money";
-import { isSafeImagePath, storedImageExists } from "@/lib/storage/local-images";
+import { isSafeImagePath, isUploadedImagePath } from "@/lib/storage/image-path";
+import { storedImageExists } from "@/lib/storage/image-storage";
 import { productSlugSchema } from "@/lib/catalog/product-slug";
 
 const moneySchema = z.string().regex(/^\d{1,8}(?:\.\d{1,2})?$/);
@@ -184,7 +185,7 @@ export async function updateProduct(
   const retainedImages = new Set(parsed.data.images.map((image) => image.url));
   let cleanupWarning = false;
   for (const imagePath of new Set(replacedImagePaths)) {
-    if (!imagePath.startsWith("/uploads/") || retainedImages.has(imagePath)) continue;
+    if (!isUploadedImagePath(imagePath) || retainedImages.has(imagePath)) continue;
     const [productImage, banner, category] = await Promise.all([
       prisma.productImage.findFirst({ where: { url: imagePath }, select: { id: true } }),
       prisma.banner.findFirst({ where: { OR: [{ imageUrl: imagePath }, { mobileImageUrl: imagePath }] }, select: { id: true } }),
@@ -192,7 +193,7 @@ export async function updateProduct(
     ]);
     if (!productImage && !banner && !category) {
       try {
-        const { removeUploadedImage } = await import("@/lib/storage/local-images");
+        const { removeUploadedImage } = await import("@/lib/storage/image-storage");
         await removeUploadedImage(imagePath);
       } catch (error) {
         console.error("Replaced unreferenced product image could not be removed.", error);

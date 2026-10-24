@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type DragEvent, type ChangeEvent } from "react";
 import { cleanupUploadedImages } from "@/components/admin/cleanup-uploaded-images";
+import { isVercelBlobImageUrl } from "@/lib/storage/image-path";
 
 type UploadResponse = { data?: { path?: string }; error?: { code?: string } };
 
@@ -100,7 +101,7 @@ export function ImageUploadField({
           <div className="flex items-center gap-3">
             {previewError ?
               <div role="alert" className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-neutral-100 p-2 text-center text-xs text-red-700">تعذر تحميل الصورة</div> :
-              preview.startsWith("/") ?
+              preview.startsWith("/") || isVercelBlobImageUrl(preview) ?
                 <Image src={preview} alt={alt || label} width={112} height={112} unoptimized onError={() => setPreviewError(true)} className="h-24 w-24 rounded-lg bg-white object-cover" /> :
               <div className="grid h-24 w-24 shrink-0 place-items-center rounded-lg bg-neutral-100 p-2 text-center text-xs text-neutral-500">صورة قديمة من مصدر خارجي</div>}
             <div className="min-w-0 flex-1">

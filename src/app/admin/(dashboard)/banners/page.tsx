@@ -6,6 +6,7 @@ import { BannerLinkEditor } from "@/components/admin/banner-link-editor";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/db";
 import { adminDate, adminNumber } from "@/lib/admin/localization";
+import { isSafeImagePath } from "@/lib/storage/image-path";
 
 export default async function AdminBannersPage() {
   await requireAdmin(["SUPER_ADMIN", "PRODUCT_MANAGER"]);
@@ -42,7 +43,7 @@ export default async function AdminBannersPage() {
                 <tr key={banner.id} className="border-t border-neutral-100">
                   <td className="px-5 py-4"><span className="block font-medium">{banner.titleAr ?? banner.title}</span>{banner.titleAr && <span dir="ltr" className="mt-1 block text-xs text-neutral-500">{banner.title}</span>}</td>
                   <td className="max-w-64 px-5 py-4 text-xs text-neutral-600">
-                    {banner.imageUrl.startsWith("/uploads/") || banner.imageUrl.startsWith("/banners/") ? <Image src={banner.imageUrl} alt="" width={160} height={90} unoptimized className="mb-2 h-14 w-24 rounded bg-neutral-100 object-cover" /> : null}
+                    {isSafeImagePath(banner.imageUrl) ? <Image src={banner.imageUrl} alt="" width={160} height={90} unoptimized className="mb-2 h-14 w-24 rounded bg-neutral-100 object-cover" /> : null}
                     <span dir="ltr" className="break-all">{banner.imageUrl}</span>
                     {banner.mobileImageUrl && <span className="mt-1 block break-all" dir="ltr">الجوال: {banner.mobileImageUrl}</span>}
                   </td>

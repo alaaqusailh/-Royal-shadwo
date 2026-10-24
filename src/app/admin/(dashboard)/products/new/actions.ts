@@ -6,7 +6,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { hasAdminRole } from "@/lib/auth/roles";
-import { isSafeImagePath, storedImageExists } from "@/lib/storage/local-images";
+import { isSafeImagePath } from "@/lib/storage/image-path";
+import { storedImageExists } from "@/lib/storage/image-storage";
 import { generateProductSlug, productSlugSchema } from "@/lib/catalog/product-slug";
 
 export type CreateProductState = {

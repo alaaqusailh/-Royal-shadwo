@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isSafeImagePath } from "@/lib/storage/local-images";
+import { isSafeImagePath } from "@/lib/storage/image-path";
 
 export const imageUrlSchema = z.string().trim().min(1).max(500).refine(isSafeImagePath);
 

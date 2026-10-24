@@ -1,7 +1,7 @@
 import { authorizeApiAdmin } from "@/lib/api/admin-auth";
 import { apiError } from "@/lib/api/http";
 import { prisma } from "@/lib/db";
-import { ImageUploadError, imageUploadMaxBytes, isUploadedImagePath, removeUploadedImage, saveUploadedImage } from "@/lib/storage/local-images";
+import { ImageUploadError, imageUploadMaxBytes, isUploadedImagePath, removeUploadedImage, saveUploadedImage } from "@/lib/storage/image-storage";
 
 export const runtime = "nodejs";
 

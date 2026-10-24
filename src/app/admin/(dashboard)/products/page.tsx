@@ -7,6 +7,7 @@ import { ProductArchiveButton } from "@/components/admin/product-archive-button"
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/db";
 import { adminNumber, adminPrice } from "@/lib/admin/localization";
+import { isSafeImagePath } from "@/lib/storage/image-path";
 
 const pageSize = 15;
 
@@ -79,7 +80,7 @@ export default async function AdminProductsPage({
                 const archived = archivedProductIds.has(product.id);
                 return (
                   <tr key={product.id} className="border-t border-neutral-100">
-                    <td className="px-5 py-4"><div className="flex items-center gap-3">{product.images[0]?.url.startsWith("/uploads/") || product.images[0]?.url.startsWith("/products/") ? <Image src={product.images[0].url} alt="" width={48} height={60} unoptimized className="h-14 w-12 rounded bg-neutral-100 object-cover" /> : null}<div><span className="block font-medium">{product.nameAr ?? product.name}</span>{product.nameAr && <span className="mt-1 block text-xs text-neutral-500">{product.name}</span>}</div></div></td>
+                    <td className="px-5 py-4"><div className="flex items-center gap-3">{product.images[0] && isSafeImagePath(product.images[0].url) ? <Image src={product.images[0].url} alt="" width={48} height={60} unoptimized className="h-14 w-12 rounded bg-neutral-100 object-cover" /> : null}<div><span className="block font-medium">{product.nameAr ?? product.name}</span>{product.nameAr && <span className="mt-1 block text-xs text-neutral-500">{product.name}</span>}</div></div></td>
                     <td className="px-5 py-4 text-neutral-600">{product.category.nameAr ?? product.category.name}</td>
                     <td className="px-5 py-4">{adminPrice(product.basePrice.toNumber())}</td>
                     <td className={`px-5 py-4 ${stock <= 5 ? "font-semibold text-amber-700" : "text-neutral-600"}`}>{adminNumber(stock)}</td>

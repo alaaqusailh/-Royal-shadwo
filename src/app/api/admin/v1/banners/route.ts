@@ -4,7 +4,7 @@ import { authorizeApiAdmin } from "@/lib/api/admin-auth";
 import { apiError, readJsonBody, validationError } from "@/lib/api/http";
 import { imageUrlSchema, linkUrlSchema } from "@/lib/api/validation";
 import { prisma } from "@/lib/db";
-import { storedImageExists } from "@/lib/storage/local-images";
+import { storedImageExists } from "@/lib/storage/image-storage";
 
 const contentRoles = ["SUPER_ADMIN", "PRODUCT_MANAGER"] as const;
 const bannerSchema = z.object({

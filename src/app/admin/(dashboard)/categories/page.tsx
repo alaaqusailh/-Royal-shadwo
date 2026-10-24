@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { CategoryCreateForm } from "@/components/admin/category-create-form";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { isSafeImagePath } from "@/lib/storage/image-path";
 
 export default async function AdminCategoriesPage() {
   await requireAdmin(["SUPER_ADMIN", "PRODUCT_MANAGER"]);
@@ -27,7 +28,7 @@ export default async function AdminCategoriesPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {categories.map((category) => (
           <Card key={category.id} className="p-5">
-            {category.imageUrl && (category.imageUrl.startsWith("/uploads/") || category.imageUrl.startsWith("/products/") || category.imageUrl.startsWith("/banners/")) && <Image src={category.imageUrl} alt="" width={640} height={320} unoptimized className="mb-4 aspect-[2/1] w-full rounded-lg bg-neutral-100 object-cover" />}
+            {category.imageUrl && isSafeImagePath(category.imageUrl) && <Image src={category.imageUrl} alt="" width={640} height={320} unoptimized className="mb-4 aspect-[2/1] w-full rounded-lg bg-neutral-100 object-cover" />}
             <div className="flex items-start justify-between gap-3">
               <div><h3 className="font-semibold">{category.nameAr ?? category.name}</h3>{category.nameAr && <p className="mt-1 text-sm text-neutral-500" dir="ltr">{category.name}</p>}</div>
               <span dir="ltr" className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs">{category.slug}</span>

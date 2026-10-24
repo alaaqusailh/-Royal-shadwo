@@ -1,4 +1,4 @@
-import { readUploadedImage } from "@/lib/storage/local-images";
+import { readUploadedImage } from "@/lib/storage/image-storage";
 
 export const runtime = "nodejs";
 

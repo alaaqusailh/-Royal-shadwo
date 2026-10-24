@@ -21,6 +21,7 @@
     "@prisma/adapter-mariadb": "7.10.1",
     "@prisma/client": "7.10.1",
     "@types/bcryptjs": "^2.4.6",
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "lucide-react": "^1.61.0",

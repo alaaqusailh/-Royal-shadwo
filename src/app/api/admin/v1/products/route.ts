@@ -4,7 +4,7 @@ import { authorizeApiAdmin } from "@/lib/api/admin-auth";
 import { apiError, readJsonBody, validationError } from "@/lib/api/http";
 import { imageUrlSchema } from "@/lib/api/validation";
 import { prisma } from "@/lib/db";
-import { storedImageExists } from "@/lib/storage/local-images";
+import { storedImageExists } from "@/lib/storage/image-storage";
 import { generateProductSlug, productSlugSchema } from "@/lib/catalog/product-slug";
 
 const productManagerRoles = ["SUPER_ADMIN", "PRODUCT_MANAGER"] as const;

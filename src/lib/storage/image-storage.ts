@@ -1,8 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { BlobNotFoundError, del, head, put } from "@vercel/blob";
+import {
+  isLocalUploadedImagePath,
+  isSafeImagePath,
+  isVercelBlobImageUrl,
+  localUploadedImageFilename,
+} from "./image-path";
+
+export {
+  isLocalUploadedImagePath,
+  isSafeImagePath,
+  isUploadedImagePath,
+  isVercelBlobImageUrl,
+} from "./image-path";
 
 const defaultMaxBytes = 5 * 1024 * 1024;
+const vercelMaxUploadBytes = 4 * 1024 * 1024;
 const maxAllowedBytes = 20 * 1024 * 1024;
 const signatures = {
   "image/jpeg": { extension: "jpg", check: (buffer: Buffer) => buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff },
@@ -18,12 +33,22 @@ export class ImageUploadError extends Error {
 
 export function imageUploadMaxBytes() {
   const raw = process.env.IMAGE_UPLOAD_MAX_BYTES;
-  if (!raw) return defaultMaxBytes;
+  const maximum = process.env.VERCEL === "1" ? vercelMaxUploadBytes : maxAllowedBytes;
+  if (!raw) return process.env.VERCEL === "1" ? vercelMaxUploadBytes : defaultMaxBytes;
   const value = Number(raw);
-  if (!Number.isSafeInteger(value) || value < 1 || value > maxAllowedBytes) {
-    throw new Error("IMAGE_UPLOAD_MAX_BYTES must be an integer between 1 and 20971520.");
+  if (!Number.isSafeInteger(value) || value < 1 || value > maximum) {
+    throw new Error(`IMAGE_UPLOAD_MAX_BYTES must be an integer between 1 and ${maximum}.`);
   }
   return value;
+}
+
+function getBlobToken() {
+  const token = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+  if (token) return token;
+  if (process.env.VERCEL === "1") {
+    throw new Error("BLOB_READ_WRITE_TOKEN must be configured for image storage on Vercel.");
+  }
+  return null;
 }
 
 function imageDirectory() {
@@ -31,21 +56,23 @@ function imageDirectory() {
 }
 
 function fileNameForImagePath(imagePath: string) {
-  const match = /^\/uploads\/([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.(?:jpg|png|webp))$/i.exec(imagePath);
-  return match?.[1] ?? null;
-}
-
-export function isUploadedImagePath(value: string) {
-  return fileNameForImagePath(value) !== null;
-}
-
-export function isSafeImagePath(value: string) {
-  if (value.startsWith("/uploads/")) return isUploadedImagePath(value);
-  return /^\/(?:products|banners)\/[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(value) && !value.includes("..") && !value.includes("//");
+  return localUploadedImageFilename(imagePath);
 }
 
 export async function storedImageExists(imagePath: string) {
   if (!isSafeImagePath(imagePath)) return false;
+  if (isVercelBlobImageUrl(imagePath)) {
+    const token = getBlobToken();
+    if (!token) return false;
+    try {
+      await head(imagePath, { token });
+      return true;
+    } catch (error) {
+      if (error instanceof BlobNotFoundError) return false;
+      throw error;
+    }
+  }
+
   const filename = fileNameForImagePath(imagePath);
   const fullPath = filename
     ? path.join(/*turbopackIgnore: true*/ imageDirectory(), filename)
@@ -68,6 +95,18 @@ export async function saveUploadedImage(file: File) {
   if (!signature) throw new ImageUploadError("UNSUPPORTED_IMAGE");
   if (!signature.check(bytes)) throw new ImageUploadError("INVALID_IMAGE");
 
+  const token = getBlobToken();
+  if (token) {
+    const uploaded = await put(`product-images/${randomUUID()}.${signature.extension}`, bytes, {
+      access: "public",
+      addRandomSuffix: true,
+      cacheControlMaxAge: 60 * 60 * 24 * 365,
+      contentType: file.type,
+      token,
+    });
+    return uploaded.url;
+  }
+
   const filename = `${randomUUID()}.${signature.extension}`;
   const directory = imageDirectory();
   await mkdir(directory, { recursive: true });
@@ -82,6 +121,7 @@ export async function saveUploadedImage(file: File) {
 }
 
 export async function readUploadedImage(imagePath: string) {
+  if (!isLocalUploadedImagePath(imagePath)) return null;
   const filename = fileNameForImagePath(imagePath);
   if (!filename) return null;
   const bytes = await readFile(path.join(/*turbopackIgnore: true*/ imageDirectory(), filename));
@@ -93,6 +133,18 @@ export async function readUploadedImage(imagePath: string) {
 }
 
 export async function removeUploadedImage(imagePath: string) {
+  if (isVercelBlobImageUrl(imagePath)) {
+    const token = getBlobToken();
+    if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is required to remove a Vercel Blob image.");
+    try {
+      await del(imagePath, { token });
+    } catch (error) {
+      if (error instanceof BlobNotFoundError) return true;
+      throw error;
+    }
+    return true;
+  }
+  if (!isLocalUploadedImagePath(imagePath)) return false;
   const filename = fileNameForImagePath(imagePath);
   if (!filename) return false;
   await rm(path.join(/*turbopackIgnore: true*/ imageDirectory(), filename), { force: true });
