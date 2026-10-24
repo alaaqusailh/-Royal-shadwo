@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { getBestSellingProducts } from "@/lib/admin/analytics";
+import { isKnownAdminRange } from "@/lib/admin/date-range";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { adminLabel, adminNumber, adminPrice } from "@/lib/admin/localization";
@@ -16,7 +17,7 @@ export default async function AdminReportsPage({
   await requireAdmin(["SUPER_ADMIN", "ORDER_MANAGER"]);
 
   const params = await searchParams;
-  const range = params.range && params.range in ranges ? params.range as keyof typeof ranges : "30d";
+  const range = isKnownAdminRange(ranges, params.range) ? params.range : "30d";
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (ranges[range] - 1));

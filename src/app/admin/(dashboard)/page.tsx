@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Boxes, CircleDollarSign, ShoppingBag, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getBestSellingProducts } from "@/lib/admin/analytics";
+import { isKnownAdminRange } from "@/lib/admin/date-range";
 import { prisma } from "@/lib/db";
 import { adminDate, adminLabel, adminNumber, adminPrice } from "@/lib/admin/localization";
 
@@ -14,7 +15,7 @@ export default async function AdminDashboardPage({
   searchParams: Promise<{ range?: string }>;
 }) {
   const params = await searchParams;
-  const range = params.range && params.range in ranges ? params.range as keyof typeof ranges : "7d";
+  const range = isKnownAdminRange(ranges, params.range) ? params.range : "7d";
   const days = ranges[range];
   const start = new Date();
   start.setHours(0, 0, 0, 0);
