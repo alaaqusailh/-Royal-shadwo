@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { authorizeApiAdmin } from "@/lib/api/admin-auth";
+import { getBestSellingProducts } from "@/lib/admin/analytics";
 import { apiError, validationError } from "@/lib/api/http";
 import { prisma } from "@/lib/db";
 
@@ -22,12 +23,13 @@ export async function GET(request: Request) {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (days - 1));
+  const end = new Date();
 
   try {
     const [ordersCount, paidTotals, lowStock, recentOrders, salesByDay, bestSellers] = await Promise.all([
-      prisma.order.count({ where: { createdAt: { gte: start } } }),
+      prisma.order.count({ where: { createdAt: { gte: start, lte: end } } }),
       prisma.order.aggregate({
-        where: { status: { in: [...paidStatuses] }, createdAt: { gte: start } },
+        where: { status: { in: [...paidStatuses] }, createdAt: { gte: start, lte: end } },
         _sum: { total: true },
         _count: { _all: true },
       }),
@@ -46,25 +48,15 @@ export async function GET(request: Request) {
         },
       }),
       prisma.$queryRaw<Array<{ day: string; amount: unknown }>>`
-        SELECT DATE_FORMAT(\`createdAt\`, '%Y-%m-%d') AS day, SUM(\`total\`) AS amount
-        FROM \`order\`
-        WHERE \`status\` IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED')
-          AND \`createdAt\` >= ${start}
-        GROUP BY DATE_FORMAT(\`createdAt\`, '%Y-%m-%d')
+        SELECT DATE_FORMAT(orders.\`createdAt\`, '%Y-%m-%d') AS day, SUM(orders.\`total\`) AS amount
+        FROM \`Order\` AS orders
+        WHERE orders.\`status\` IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED')
+          AND orders.\`createdAt\` >= ${start}
+          AND orders.\`createdAt\` <= ${end}
+        GROUP BY DATE_FORMAT(orders.\`createdAt\`, '%Y-%m-%d')
         ORDER BY day
       `,
-      prisma.$queryRaw<Array<{ id: string; name: string; nameAr: string | null; unitsSold: bigint }>>`
-        SELECT product.id, product.name, product.nameAr, SUM(orderitem.quantity) AS unitsSold
-        FROM orderitem
-        INNER JOIN \`order\` ON \`order\`.id = orderitem.orderId
-        INNER JOIN productvariant ON productvariant.id = orderitem.variantId
-        INNER JOIN product ON product.id = productvariant.productId
-        WHERE \`order\`.status IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED')
-          AND \`order\`.createdAt >= ${start}
-        GROUP BY product.id, product.name, product.nameAr
-        ORDER BY unitsSold DESC, product.id ASC
-        LIMIT 5
-      `,
+      getBestSellingProducts(start, end, 5),
     ]);
 
     const sales = Number(paidTotals._sum.total ?? 0);
@@ -88,12 +80,7 @@ export async function GET(request: Request) {
           lowStock,
         },
         salesByDay: chart,
-        bestSellers: bestSellers.map((product) => ({
-          id: product.id,
-          name: product.name,
-          nameAr: product.nameAr,
-          unitsSold: Number(product.unitsSold),
-        })),
+        bestSellers,
         recentOrders: recentOrders.map((order) => ({
           orderNumber: order.orderNumber,
           status: order.status,

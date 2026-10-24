@@ -5,6 +5,7 @@ import { apiError, readJsonBody, validationError } from "@/lib/api/http";
 import { imageUrlSchema } from "@/lib/api/validation";
 import { prisma } from "@/lib/db";
 import { storedImageExists } from "@/lib/storage/local-images";
+import { generateProductSlug, productSlugSchema } from "@/lib/catalog/product-slug";
 
 const productManagerRoles = ["SUPER_ADMIN", "PRODUCT_MANAGER"] as const;
 const productListSchema = z.object({
@@ -17,7 +18,7 @@ const moneySchema = z.string().regex(/^\d{1,8}(?:\.\d{1,2})?$/);
 const productCreateSchema = z.object({
   name: z.string().trim().min(2).max(160),
   nameAr: z.string().trim().max(160).optional(),
-  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(100),
+  slug: productSlugSchema.optional().or(z.literal("")),
   description: z.string().trim().min(10).max(5000),
   descriptionAr: z.string().trim().max(5000).optional(),
   fabric: z.string().trim().max(160).optional(),
@@ -124,6 +125,7 @@ export async function POST(request: Request) {
       ]);
       const requiredSizes = new Set(parsed.data.variants.map(({ sizeId }) => sizeId));
       const requiredColors = new Set(parsed.data.variants.map(({ colorId }) => colorId));
+      const slug = parsed.data.slug || generateProductSlug(parsed.data.name);
       if (
         !category ||
         sizes.length !== requiredSizes.size ||
@@ -136,7 +138,7 @@ export async function POST(request: Request) {
         data: {
           name: parsed.data.name,
           nameAr: parsed.data.nameAr || null,
-          slug: parsed.data.slug,
+          slug,
           description: parsed.data.description,
           descriptionAr: parsed.data.descriptionAr || null,
           fabric: parsed.data.fabric || null,

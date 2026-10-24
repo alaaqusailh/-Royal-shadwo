@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { getBestSellingProducts } from "@/lib/admin/analytics";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { adminLabel, adminNumber, adminPrice } from "@/lib/admin/localization";
@@ -19,43 +20,29 @@ export default async function AdminReportsPage({
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (ranges[range] - 1));
+  const end = new Date();
   const [sales, orderCount, statusCounts, products, customers] = await Promise.all([
     prisma.order.aggregate({
-      where: { status: { in: [...paidStatuses] }, createdAt: { gte: start } },
+      where: { status: { in: [...paidStatuses] }, createdAt: { gte: start, lte: end } },
       _sum: { total: true },
       _count: { _all: true },
     }),
-    prisma.order.count({ where: { createdAt: { gte: start } } }),
+    prisma.order.count({ where: { createdAt: { gte: start, lte: end } } }),
     prisma.order.groupBy({
       by: ["status"],
-      where: { createdAt: { gte: start } },
+      where: { createdAt: { gte: start, lte: end } },
       _count: { _all: true },
       orderBy: { status: "asc" },
     }),
-    prisma.orderItem.groupBy({
-      by: ["variantId"],
-      where: {
-        variantId: { not: null },
-        order: { is: { status: { in: [...paidStatuses] }, createdAt: { gte: start } } },
-      },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: 8,
-    }),
+    getBestSellingProducts(start, end, 8),
     prisma.user.count({
       where: {
-        createdAt: { gte: start },
+        createdAt: { gte: start, lte: end },
         roles: { some: { role: { name: "CUSTOMER" } } },
       },
     }),
   ]);
 
-  const variantIds = products.flatMap((product) => product.variantId ? [product.variantId] : []);
-  const variants = await prisma.productVariant.findMany({
-    where: { id: { in: variantIds } },
-    select: { id: true, product: { select: { name: true, nameAr: true } } },
-  });
-  const productByVariant = new Map(variants.map((variant) => [variant.id, variant.product]));
   const revenue = Number(sales._sum.total ?? 0);
 
   return (
@@ -89,10 +76,7 @@ export default async function AdminReportsPage({
         <Card>
           <div className="border-b border-neutral-200 p-5"><h3 className="font-semibold">المنتجات الأكثر مبيعًا</h3><p className="mt-1 text-xs text-neutral-500">عدد القطع في الطلبات المدفوعة والمؤكدة.</p></div>
           <div className="divide-y divide-neutral-100 px-5">
-            {products.map((item) => {
-              const product = item.variantId ? productByVariant.get(item.variantId) : undefined;
-              return <div key={item.variantId ?? "unlinked"} className="flex items-center justify-between gap-4 py-3 text-sm"><span className="truncate font-medium">{product?.nameAr ?? product?.name ?? "منتج غير متاح"}</span><span className="shrink-0 text-neutral-600">{adminNumber(item._sum.quantity ?? 0)} مباعة</span></div>;
-            })}
+            {products.map((item) => <div key={item.id} className="flex items-center justify-between gap-4 py-3 text-sm"><span className="truncate font-medium">{item.nameAr ?? item.name}</span><span className="shrink-0 text-neutral-600">{adminNumber(item.unitsSold)} مباعة</span></div>)}
             {products.length === 0 && <p className="py-8 text-center text-sm text-neutral-500">لا توجد مبيعات للمنتجات خلال هذه الفترة.</p>}
           </div>
         </Card>

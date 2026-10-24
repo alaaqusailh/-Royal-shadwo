@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Boxes, CircleDollarSign, ShoppingBag, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { getBestSellingProducts } from "@/lib/admin/analytics";
 import { prisma } from "@/lib/db";
 import { adminDate, adminLabel, adminNumber, adminPrice } from "@/lib/admin/localization";
 
@@ -18,11 +19,12 @@ export default async function AdminDashboardPage({
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - (days - 1));
+  const end = new Date();
 
   const [ordersCount, paidTotals, lowStock, recentOrders, bestSellers, salesByDay] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: start } } }),
+    prisma.order.count({ where: { createdAt: { gte: start, lte: end } } }),
     prisma.order.aggregate({
-      where: { status: { in: [...paidStatuses] }, createdAt: { gte: start } },
+      where: { status: { in: [...paidStatuses] }, createdAt: { gte: start, lte: end } },
       _sum: { total: true },
       _count: { _all: true },
     }),
@@ -39,31 +41,17 @@ export default async function AdminDashboardPage({
         _count: { select: { items: true } },
       },
     }),
-    prisma.orderItem.groupBy({
-      by: ["variantId"],
-      where: {
-        variantId: { not: null },
-        order: { is: { status: { in: [...paidStatuses] }, createdAt: { gte: start } } },
-      },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: 5,
-    }),
+    getBestSellingProducts(start, end, 5),
     prisma.$queryRaw<Array<{ day: string; amount: unknown }>>`
-      SELECT DATE_FORMAT(\`createdAt\`, '%Y-%m-%d') AS day, SUM(\`total\`) AS amount
-      FROM \`order\`
-      WHERE \`status\` IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED')
-        AND \`createdAt\` >= ${start}
-      GROUP BY DATE_FORMAT(\`createdAt\`, '%Y-%m-%d')
+      SELECT DATE_FORMAT(orders.\`createdAt\`, '%Y-%m-%d') AS day, SUM(orders.\`total\`) AS amount
+      FROM \`Order\` AS orders
+      WHERE orders.\`status\` IN ('PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED')
+        AND orders.\`createdAt\` >= ${start}
+        AND orders.\`createdAt\` <= ${end}
+      GROUP BY DATE_FORMAT(orders.\`createdAt\`, '%Y-%m-%d')
       ORDER BY day`,
   ]);
 
-  const variantIds = bestSellers.flatMap((item) => item.variantId ? [item.variantId] : []);
-  const bestSellerVariants = await prisma.productVariant.findMany({
-    where: { id: { in: variantIds } },
-    select: { id: true, product: { select: { name: true, nameAr: true } }, size: { select: { label: true } } },
-  });
-  const variantsById = new Map(bestSellerVariants.map((variant) => [variant.id, variant]));
   const sales = Number(paidTotals._sum.total ?? 0);
   const paidCount = paidTotals._count._all;
   const dailyAmounts = new Map(salesByDay.map((item) => [item.day, Number(item.amount)]));
@@ -147,15 +135,12 @@ export default async function AdminDashboardPage({
           <CardContent className="divide-y divide-neutral-100 p-5">
             {bestSellers.length === 0 ? (
               <p className="py-8 text-center text-sm text-neutral-500">لا توجد مبيعات مكتملة حتى الآن.</p>
-            ) : bestSellers.map((item) => {
-              const variant = item.variantId ? variantsById.get(item.variantId) : undefined;
-              return (
-                <div key={item.variantId ?? "unlinked"} className="flex items-center justify-between gap-4 py-3 text-sm">
-                  <span className="min-w-0 truncate font-medium">{variant?.product.nameAr ?? variant?.product.name ?? "منتج غير متاح"} <span className="text-xs text-neutral-500">· {variant?.size.label ?? "—"}</span></span>
-                  <span className="shrink-0 text-neutral-600">{adminNumber(item._sum.quantity ?? 0)} مباعة</span>
-                </div>
-              );
-            })}
+            ) : bestSellers.map((item) => (
+              <div key={item.id} className="flex items-center justify-between gap-4 py-3 text-sm">
+                <span className="min-w-0 truncate font-medium">{item.nameAr ?? item.name}</span>
+                <span className="shrink-0 text-neutral-600">{adminNumber(item.unitsSold)} مباعة</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>

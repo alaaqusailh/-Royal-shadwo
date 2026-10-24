@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ActiveToggle } from "@/components/admin/active-toggle";
+import { ProductArchiveButton } from "@/components/admin/product-archive-button";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/db";
 import { adminNumber, adminPrice } from "@/lib/admin/localization";
@@ -42,6 +43,16 @@ export default async function AdminProductsPage({
     }),
     prisma.product.count({ where }),
   ]);
+  const archivedProducts = await prisma.auditLog.findMany({
+    where: {
+      entityType: "Product",
+      action: "product:archived",
+      entityId: { in: products.map((product) => product.id) },
+    },
+    select: { entityId: true },
+    distinct: ["entityId"],
+  });
+  const archivedProductIds = new Set(archivedProducts.map((entry) => entry.entityId));
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const queryString = query ? `&q=${encodeURIComponent(query)}` : "";
 
@@ -65,17 +76,19 @@ export default async function AdminProductsPage({
             <tbody>
               {products.map((product) => {
                 const stock = product.variants.reduce((sum, variant) => sum + (variant.inventory?.availableStock ?? 0), 0);
+                const archived = archivedProductIds.has(product.id);
                 return (
                   <tr key={product.id} className="border-t border-neutral-100">
                     <td className="px-5 py-4"><div className="flex items-center gap-3">{product.images[0]?.url.startsWith("/uploads/") || product.images[0]?.url.startsWith("/products/") ? <Image src={product.images[0].url} alt="" width={48} height={60} unoptimized className="h-14 w-12 rounded bg-neutral-100 object-cover" /> : null}<div><span className="block font-medium">{product.nameAr ?? product.name}</span>{product.nameAr && <span className="mt-1 block text-xs text-neutral-500">{product.name}</span>}</div></div></td>
                     <td className="px-5 py-4 text-neutral-600">{product.category.nameAr ?? product.category.name}</td>
                     <td className="px-5 py-4">{adminPrice(product.basePrice.toNumber())}</td>
                     <td className={`px-5 py-4 ${stock <= 5 ? "font-semibold text-amber-700" : "text-neutral-600"}`}>{adminNumber(stock)}</td>
-                    <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs ${product.isPublished ? "bg-emerald-50 text-emerald-800" : "bg-neutral-100 text-neutral-600"}`}>{product.isPublished ? "منشور" : "مسودة"}</span></td>
+                    <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs ${archived ? "bg-red-50 text-red-800" : product.isPublished ? "bg-emerald-50 text-emerald-800" : "bg-neutral-100 text-neutral-600"}`}>{archived ? "مؤرشف" : product.isPublished ? "منشور" : "مسودة"}</span></td>
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap items-center gap-3">
-                        <ActiveToggle endpoint={`/api/admin/v1/products/${product.id}`} active={product.isPublished} field="isPublished" />
+                        {!archived && <ActiveToggle endpoint={`/api/admin/v1/products/${product.id}`} active={product.isPublished} field="isPublished" />}
                         <Link href={`/admin/products/${product.id}/edit`} className="text-xs font-medium text-neutral-700 underline underline-offset-4 hover:text-neutral-950">تعديل</Link>
+                        {!archived && <ProductArchiveButton endpoint={`/api/admin/v1/products/${product.id}`} />}
                       </div>
                     </td>
                   </tr>

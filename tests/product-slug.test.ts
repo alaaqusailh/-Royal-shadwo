@@ -6,8 +6,8 @@ test("product slug is generated from an English product name without a user-ente
   assert.equal(generateProductSlug("  Royal Shadow Abaya!  ", "1234abcd"), "royal-shadow-abaya-1234abcd");
 });
 
-test("product slug uses a safe fallback for names without ASCII letters", () => {
-  assert.equal(generateProductSlug("عباية ملكية", "abcd1234"), "product-abcd1234");
+test("product slug transliterates Arabic names into URL-safe segments", () => {
+  assert.equal(generateProductSlug("عباية ملكية", "abcd1234"), "abaya-mlkya-abcd1234");
 });
 
 test("custom product slug is normalized and constrained to safe URL segments", () => {

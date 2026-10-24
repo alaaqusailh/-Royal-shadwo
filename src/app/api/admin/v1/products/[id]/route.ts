@@ -91,6 +91,13 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         select: { id: true, isPublished: true, basePrice: true, compareAtPrice: true },
       });
       if (!existing) return null;
+      if (parsed.data.isPublished === true) {
+        const archiveRecord = await tx.auditLog.findFirst({
+          where: { entityType: "Product", entityId: id, action: "product:archived" },
+          select: { id: true },
+        });
+        if (archiveRecord) throw new Error("PRODUCT_ARCHIVED");
+      }
       if (parsed.data.categoryId) {
         const category = await tx.category.findUnique({
           where: { id: parsed.data.categoryId },
@@ -150,6 +157,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (error instanceof Error && error.message === "INVALID_COMPARE_AT_PRICE") {
       return apiError(400, "INVALID_COMPARE_AT_PRICE", "Compare-at price must be greater than the base price.");
     }
+    if (error instanceof Error && error.message === "PRODUCT_ARCHIVED") {
+      return apiError(409, "PRODUCT_ARCHIVED", "Archived products cannot be published.");
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return apiError(409, "CONFLICT", "The product slug is already in use.");
     }
@@ -171,6 +181,11 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
         select: { id: true, slug: true },
       });
       if (!existing) return null;
+      const archiveRecord = await tx.auditLog.findFirst({
+        where: { entityType: "Product", entityId: id, action: "product:archived" },
+        select: { id: true },
+      });
+      if (archiveRecord) return { ...existing, alreadyArchived: true };
 
       await tx.product.update({
         where: { id },
@@ -189,11 +204,11 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
           details: { slug: existing.slug },
         },
       });
-      return existing;
+      return { ...existing, alreadyArchived: false };
     });
 
     return product
-      ? Response.json({ data: { id: product.id, archived: true } })
+      ? Response.json({ data: { id: product.id, archived: true, alreadyArchived: product.alreadyArchived } })
       : apiError(404, "NOT_FOUND", "Product not found.");
   } catch (error) {
     console.error("Admin product archive failed.", error);
